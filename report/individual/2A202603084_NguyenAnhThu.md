@@ -2,12 +2,12 @@
 
 ## 1. Thông tin học viên
 
-- Họ tên:
+- Họ tên: Nguyễn Anh Thư
 - MSSV: 2A202603084
 - Email: 26ai.thuna@vinuni.edu.vn
 - Lớp: K5-L2A
 - Link repo bài làm: https://github.com/26aithuna-bot/K5-L2A-DAY02-NguyenAnhThu-2A202603084-ObjectDetection
-- Link Colab đã chạy:
+- Link Colab đã chạy: https://colab.research.google.com/gist/26aithuna-bot/caa3ff5c3fb3b1e32282dbc6358366a3/day2_annotation_to_yolo.ipynb
 
 ## 2. Schema và mini guideline
 
@@ -53,8 +53,8 @@ Thời điểm nhận gold:
 
 ## 5. Kết quả YOLO
 
-- Runtime: Google Colab, GPU (`device: 0`). Phiên bản Ultralytics và Torch:
-- Tham số: giữ nguyên notebook (`yolo26n.pt`, 50 epoch, `imgsz=640`, `batch=-1`, `seed=20260909`).
+- Runtime: Google Colab, GPU Tesla T4 (15 GB), Python 3.13.16, Ultralytics 8.4.208, torch 2.14.1+cu130. Train 50 epoch hết khoảng 1.4 phút.
+- Tham số: giữ nguyên notebook (`yolo26n.pt`, 50 epoch, `imgsz=640`, `batch=-1` được AutoBatch chọn 44, `seed=20260909`). Dữ liệu: 50 ảnh train, 10 ảnh eval làm validation.
 - Best checkpoint: `/content/Day2-Lab/outputs/yolo26_runs/vehicle_annotation/weights/best.pt`
 
 | Chỉ số trên 10 ảnh eval | Giá trị |
@@ -63,6 +63,13 @@ Thời điểm nhận gold:
 | Recall | 0.2303 |
 | mAP50 | 0.2723 |
 | mAP50–95 | 0.2017 |
+
+| Lớp | Số ảnh | Số box | Precision | Recall | mAP50 | mAP50–95 |
+|---|---:|---:|---:|---:|---:|---:|
+| car | 10 | 94 | 0.833 | 0.638 | 0.739 | 0.523 |
+| truck | 5 | 5 | 0.675 | 0.200 | 0.239 | 0.206 |
+| bus | 2 | 2 | 0.000 | 0.000 | 0.008 | 0.004 |
+| van | 6 | 12 | 0.134 | 0.083 | 0.103 | 0.074 |
 
 - Ảnh prediction trên 10 ảnh eval: [assets/eval_predictions/visuals/](assets/eval_predictions/visuals/), ví dụ [drive_053](assets/eval_predictions/visuals/drive_053.jpg).
 - Log train: [results.csv](assets/yolo26_runs/vehicle_annotation/results.csv), [results.png](assets/yolo26_runs/vehicle_annotation/results.png).

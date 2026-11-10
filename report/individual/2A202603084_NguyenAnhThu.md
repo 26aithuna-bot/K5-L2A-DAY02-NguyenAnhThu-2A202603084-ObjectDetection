@@ -53,18 +53,20 @@ Thời điểm nhận gold:
 
 ## 5. Kết quả YOLO
 
-- Runtime, GPU/CPU, phiên bản Ultralytics và Torch:
-- Tham số thay đổi so với notebook:
-- Best checkpoint:
+- Runtime: Google Colab, GPU (`device: 0`). Phiên bản Ultralytics và Torch:
+- Tham số: giữ nguyên notebook (`yolo26n.pt`, 50 epoch, `imgsz=640`, `batch=-1`, `seed=20260909`).
+- Best checkpoint: `/content/Day2-Lab/outputs/yolo26_runs/vehicle_annotation/weights/best.pt`
 
 | Chỉ số trên 10 ảnh eval | Giá trị |
 |---|---:|
-| Precision | |
-| Recall | |
-| mAP50 | |
-| mAP50–95 | |
+| Precision | 0.4105 |
+| Recall | 0.2303 |
+| mAP50 | 0.2723 |
+| mAP50–95 | 0.2017 |
 
-Ảnh prediction: `assets/eval_predictions/visuals/`. Log train và ảnh chỉ số: `assets/yolo26_runs/`.
+- Ảnh prediction trên 10 ảnh eval: [assets/eval_predictions/visuals/](assets/eval_predictions/visuals/), ví dụ [drive_053](assets/eval_predictions/visuals/drive_053.jpg).
+- Log train: [results.csv](assets/yolo26_runs/vehicle_annotation/results.csv), [results.png](assets/yolo26_runs/vehicle_annotation/results.png).
+- Đánh giá best.pt: [confusion matrix](assets/yolo26_runs/vehicle_eval/confusion_matrix.png), [PR curve](assets/yolo26_runs/vehicle_eval/BoxPR_curve.png).
 
 1. Lớp nào recall thấp nhất? Ảnh nào minh họa?
 2. Nếu mAP50 cao nhưng mAP50–95 thấp, cần kiểm điều gì trên box?

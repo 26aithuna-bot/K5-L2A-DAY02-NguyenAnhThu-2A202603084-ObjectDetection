@@ -1,15 +1,4 @@
-﻿<#
-Chuyển export CVAT "CVAT for images 1.1" (annotations.xml) sang nhãn YOLO detection của lab.
-
-Chạy từ thư mục gốc repo (PowerShell):
-    powershell -ExecutionPolicy Bypass -File tools/cvat_xml_to_yolo.ps1 -Xml "<đường dẫn>/annotations.xml"
-
-- Schema cố định: car=0, truck=1, bus=2, van=3 (gặp label khác thì dừng, không tự đoán).
-- Mỗi ảnh trong dataset/images/train có đúng một file .txt (ảnh không có box -> file rỗng).
-- Tọa độ pixel được kẹp vào khung ảnh rồi chuẩn hóa, 6 chữ số thập phân, UTF-8 không BOM, xuống dòng LF.
-- Không ghi đè file đã có trừ khi thêm -Overwrite.
-#>
-param(
+﻿param(
     [Parameter(Mandatory = $true)][string]$Xml,
     [string]$Images = "dataset/images/train",
     [string]$Out = "dataset/labels/train",

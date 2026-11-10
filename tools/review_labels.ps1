@@ -1,22 +1,10 @@
-﻿<#
-Công cụ hỗ trợ self-QC (CP3): vẽ nhãn YOLO lên ảnh và liệt kê các box nên rà lại bằng mắt.
-Không sửa nhãn - chỉ tạo tài liệu để người gán nhãn tự mở ảnh và quyết định.
-
-Chạy từ thư mục gốc repo (PowerShell):
-    powershell -ExecutionPolicy Bypass -File tools/review_labels.ps1
-
-Đầu ra (trong outputs/, không bị commit):
-    outputs/self_qc/previews/<ảnh>.png   ảnh phóng 2x, mỗi box có số thứ tự = số dòng trong file .txt
-    outputs/self_qc/review_list.csv      box cần rà + lý do
-    outputs/self_qc/summary.csv          số box/lớp mỗi ảnh và số box cần rà
-#>
-param(
+﻿param(
     [string]$Images = "dataset/images/train",
     [string]$Labels = "dataset/labels/train",
     [string]$Out = "outputs/self_qc",
     [int]$Scale = 2,
-    [double]$SmallPx = 12,      # cạnh ngắn hơn ngưỡng này (pixel ảnh gốc) -> kiểm xem có nhận ra lớp không
-    [double]$DupIoU = 0.6       # hai box chồng nhau quá ngưỡng -> có thể trùng/gộp
+    [double]$SmallPx = 12,
+    [double]$DupIoU = 0.6
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing

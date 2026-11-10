@@ -4,8 +4,6 @@ gold_train_labels/
 gold_train_labels.zip
 **/gold_train_labels/
 self_input/
-
-# Nhãn nháp / preview sinh ra khi pre-label, không nộp (bản cuối nằm ở dataset/labels/train/).
 dataset/images/output/
 
 # Nhãn học viên trong dataset/labels/train/ phải được commit khi nộp bài.

@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""
-Pre-label (gán nhãn nháp) cho 50 ảnh train bằng YOLO pretrained trên COCO,
-xuất đúng định dạng YOLO detection của lab Day 2 (car=0, truck=1, bus=2, van=3).
-
-QUAN TRỌNG: đây chỉ là NHÃN NHÁP. Mọi box phải được mở lại và sửa tay trong
-CVAT / Label Studio / Roboflow trước khi khóa nhãn. COCO không có lớp "van",
-và COCO "truck" gộp cả xe tải, van và xe bán tải, nên các box truck đều bị
-đánh dấu cần rà lại.
-
-Chạy từ thư mục gốc repo lab:
-    python3 tools/prelabel_yolo.py
-    python3 tools/prelabel_yolo.py --model yolo11x.pt --conf 0.25 --device 0
-
-Đầu ra:
-    outputs/prelabel_review/labels/<basename>.txt  nhãn nháp, 5 cột, normalized
-    outputs/prelabel_review/review_boxes.csv   từng box + cờ cần rà
-    outputs/prelabel_review/review_images.csv  số box mỗi ảnh + số cờ
-    outputs/prelabel_review/previews/*.jpg     ảnh vẽ box để rà nhanh
-    outputs/prelabel_review/cvat_yolo11.zip    import vào CVAT (YOLO 1.1)
-(`outputs/` đã nằm trong .gitignore của lab nên không bị commit.)
-"""
 from __future__ import annotations
 
 import argparse
@@ -29,27 +8,24 @@ import sys
 import zipfile
 from pathlib import Path
 
-# Schema bắt buộc của lab (data.yaml). Không đổi thứ tự.
 SCHEMA = {0: "car", 1: "truck", 2: "bus", 3: "van"}
 
-# COCO id -> schema id. Chỉ giữ 3 lớp xe bốn bánh có trong COCO.
-# COCO 3 (motorcycle), 1 (bicycle), 0 (person)... bị bỏ qua theo GUIDE.md.
-COCO_TO_SCHEMA = {2: 0, 7: 1, 5: 2}  # car->car, truck->truck, bus->bus
+COCO_TO_SCHEMA = {2: 0, 7: 1, 5: 2}
 
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 COLORS = {0: (0, 200, 0), 1: (0, 120, 255), 2: (255, 60, 60), 3: (200, 0, 200)}
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(description="Tạo nhãn nháp YOLO cho ảnh train")
     p.add_argument("--images", default="dataset/images/train", help="thư mục 50 ảnh train")
-    p.add_argument("--labels", default="outputs/prelabel_review/labels", help="nơi ghi nhãn nháp (KHÔNG ghi thẳng vào dataset/labels/train)")
+    p.add_argument("--labels", default="outputs/prelabel_review/labels", help="nơi ghi nhãn nháp")
     p.add_argument("--review-dir", default="outputs/prelabel_review", help="nơi ghi CSV/preview/zip CVAT")
     p.add_argument("--model", default="yolo26x.pt", help="checkpoint COCO (yolo26x.pt, yolo11x.pt, ...)")
     p.add_argument("--conf", type=float, default=0.25, help="ngưỡng confidence giữ box")
     p.add_argument("--review-conf", type=float, default=0.50, help="box dưới ngưỡng này bị gắn cờ low_conf")
     p.add_argument("--iou", type=float, default=0.60, help="ngưỡng IoU cho NMS")
-    p.add_argument("--imgsz", type=int, default=1280, help="kích thước suy luận; ảnh CCTV có nhiều xe nhỏ nên để lớn")
+    p.add_argument("--imgsz", type=int, default=1280, help="kích thước ảnh khi suy luận")
     p.add_argument("--min-px", type=float, default=8.0, help="bỏ box có cạnh ngắn hơn số pixel này")
     p.add_argument("--device", default=None, help="'0' cho GPU, 'cpu', hoặc để trống tự chọn")
     p.add_argument("--overwrite", action="store_true", help="cho phép ghi đè file nhãn đã có")
@@ -63,7 +39,6 @@ def clamp01(v: float) -> float:
 
 
 def to_yolo_line(cls: int, x1: float, y1: float, x2: float, y2: float, w: int, h: int) -> str | None:
-    """Pixel xyxy -> dòng YOLO normalized, đã kẹp trong ảnh (box chạm rìa khi bị cắt khung)."""
     x1, x2 = clamp01(x1 / w), clamp01(x2 / w)
     y1, y2 = clamp01(y1 / h), clamp01(y2 / h)
     bw, bh = x2 - x1, y2 - y1
@@ -76,17 +51,14 @@ def to_yolo_line(cls: int, x1: float, y1: float, x2: float, y2: float, w: int, h
 def flags_for(cls: int, conf: float, x1, y1, x2, y2, w, h, review_conf: float) -> list[str]:
     f = []
     if cls == 1:
-        # COCO truck gộp xe tải, van, xe bán tải: phải tự quyết truck / van / car.
         f.append("check_truck_vs_van_or_pickup")
     if cls == 0 and conf < 0.80:
-        # Minivan thường bị COCO gọi là car: rà xem có phải van không.
         f.append("check_car_vs_van")
     if cls == 2 and conf < 0.80:
-        # Minibus/van chở khách dễ lẫn với bus.
         f.append("check_bus_vs_van_minibus")
     if conf < review_conf:
         f.append("low_conf")
-    edge = 2  # px
+    edge = 2
     if x1 <= edge or y1 <= edge or x2 >= w - edge or y2 >= h - edge:
         f.append("touches_edge")
     if min(x2 - x1, y2 - y1) < 20:
@@ -95,7 +67,6 @@ def flags_for(cls: int, conf: float, x1, y1, x2, y2, w, h, review_conf: float) -
 
 
 def write_cvat_zip(img_paths: list[Path], labels_dir: Path, out_zip: Path) -> None:
-    """Zip theo định dạng CVAT 'YOLO 1.1' để import nhãn nháp vào task CVAT."""
     with zipfile.ZipFile(out_zip, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("obj.names", "\n".join(SCHEMA[i] for i in range(4)) + "\n")
         z.writestr(
@@ -156,7 +127,7 @@ def main() -> int:
             iou=a.iou,
             imgsz=a.imgsz,
             classes=list(COCO_TO_SCHEMA),
-            agnostic_nms=True,  # tránh một xe ra 2 box car+truck chồng nhau
+            agnostic_nms=True,
             device=a.device,
             verbose=False,
         )[0]
@@ -186,7 +157,6 @@ def main() -> int:
                 "flags": ";".join(f),
             })
 
-        # Ảnh không có xe hợp lệ vẫn phải có file .txt rỗng.
         (labels_dir / f"{img_path.stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
         img_rows.append({"image": img_path.name, "width": w, "height": h, "n_boxes": len(lines), "n_flagged": n_flag})
 
